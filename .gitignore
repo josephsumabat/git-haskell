@@ -1,0 +1,4 @@
+.stack-work/
+git-haskell.cabal
+*.swp
+*~

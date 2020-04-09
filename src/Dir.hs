@@ -16,10 +16,12 @@ import System.FilePath
     joinPath
   , equalFilePath
   )
-
+import Control.Exception (throw)
 import Control.Monad (guard)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Maybe (MaybeT (MaybeT))
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
+
+import DefinedExceptions (DirException(..))
 
 gitDir::String
 gitDir = ".git"
@@ -30,25 +32,10 @@ objectDir = "objects"
 doesGitDirectoryExist::String -> IO Bool
 doesGitDirectoryExist dir = doesDirectoryExist $ joinPath [dir, gitDir]
 
--- Recursively search curent directory and parents for a git directory
---gitPath::IO (Maybe FilePath)
---gitPath =
---    getCurrentDirectory
---      >>= \dir -> doesGitDirectoryExist dir
---      >>= findGitDirectory' dir
---    where 
---    findGitDirectory'::String -> Bool -> IO (Maybe FilePath)
---    findGitDirectory' !currentDir !gitExists
---      | gitExists = return $ Just $ joinPath [currentDir, gitDir]
---      | equalFilePath currentDir "/" = return Nothing
---      | otherwise = canonicalizePath (joinPath [currentDir, ".."])
---        >>= \dir -> doesGitDirectoryExist dir
---        >>= findGitDirectory' dir
-
 -- Monad transformer that recursively searches curent directory and parents for
 -- a git directory
-gitPath::MaybeT IO FilePath
-gitPath =
+gitPathMaybe::MaybeT IO FilePath
+gitPathMaybe =
      (lift $ getCurrentDirectory)
       >>= \dir -> (lift $ doesGitDirectoryExist dir)
       >>= findGitDirectory' dir
@@ -61,6 +48,13 @@ gitPath =
         >>= \dir -> (lift $ doesGitDirectoryExist dir)
         >>= findGitDirectory' dir
 
+gitPath::IO FilePath
+gitPath = (runMaybeT gitPathMaybe) >>=
+  \maybePath ->
+    case (maybePath) of
+      Nothing -> throw DirNotFoundException
+      Just p -> return p
 
+-- Get an object's actual file
 hashToFile::String -> FilePath -> FilePath
 hashToFile hash gitPath = joinPath [gitPath, objectDir, (take 2 hash), (drop 2 hash)]

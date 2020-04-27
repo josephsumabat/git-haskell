@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Obj.RawObj (
   RawObj (RawObj)
   , ObjType(Blob, Commit, Tree)
@@ -5,7 +6,7 @@ module Obj.RawObj (
   , parseObj
   , rawContents
   , objType
-  , objTypeToStr
+  , objTypeToText
   , makeObjContents
   ) where
 
@@ -13,8 +14,11 @@ import Codec.Compression.Zlib (compress, decompress)
 import Control.Exception (throw)
 import Text.Read (readMaybe)
 
+import qualified Data.Text as T (Text, concat, pack)
+import Text.Show as T (Show(..))
+import Data.Text.Encoding as T (decodeUtf8, encodeUtf8)
 import qualified Data.ByteString.Lazy 
-  as LBS (ByteString, toStrict, length)
+  as LBS (ByteString, toStrict, fromStrict, length)
 import qualified Data.ByteString.Lazy.UTF8
   as LUTF8 (fromString)
 import qualified Data.ByteString.Char8
@@ -22,11 +26,12 @@ import qualified Data.ByteString.Char8
 
 import DefinedExceptions (ObjException(..))
 
+test=1
 type Hash = String
 data RawObj = RawObj {
         objType :: ObjType
       , size :: Int
-      , rawContents :: String
+      , rawContents :: T.Text
   } deriving Show
 
 data ObjType = Blob | Commit | Tree deriving Show
@@ -35,12 +40,12 @@ class GitObj a where
   fromRaw::RawObj -> a
   toRaw::a -> RawObj
 
-objTypeToStr::ObjType -> String
-objTypeToStr Blob = "blob"
-objTypeToStr Commit = "commit"
-objTypeToStr Tree = "tree"
+objTypeToText::ObjType -> T.Text
+objTypeToText Blob = "blob"
+objTypeToText Commit = "commit"
+objTypeToText Tree = "tree"
 
-strToObjType::String -> Maybe ObjType
+strToObjType::T.Text -> Maybe ObjType
 strToObjType "blob" = Just Blob
 strToObjType "commit" = Just Commit
 strToObjType "tree" = Just Tree
@@ -55,9 +60,9 @@ parseObjMaybe rawContents =
       metaData =  C.break (' '==) $ fst splitData
       in 
         RawObj 
-        <$> (strToObjType $ C.unpack $ fst metaData)
+        <$> (strToObjType $ T.decodeUtf8 $ fst metaData)
         <*> (readMaybe $ C.unpack $ C.drop 1 $ snd metaData)
-        <*> (return $ C.unpack $ C.drop 1 $ snd splitData)
+        <*> (return $ T.decodeUtf8 $ C.drop 1 $ snd splitData)
 
 parseObj::LBS.ByteString -> RawObj
 parseObj rawContents =
@@ -67,4 +72,5 @@ parseObj rawContents =
 
 makeObjContents::RawObj -> LBS.ByteString
 makeObjContents (RawObj t s c) =
-  LUTF8.fromString $ (objTypeToStr t) ++ " " ++ (show s) ++ "\0" ++  c
+  LBS.fromStrict $ T.encodeUtf8 $ T.concat
+    [(objTypeToText t) ," " , (T.pack $ show s) , "\0" ,  c]

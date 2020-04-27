@@ -2,20 +2,17 @@ module Lib
     ( someFunc
     ) where
 
-import Codec.Compression.Zlib (compress, decompress)
 import Obj.RawObj (
-    GitObj(fromRaw , toRaw)
+    GitObj(..)
   , objType
   , parseObj
   , rawContents
   , makeObjContents)
 import Obj.BlobObj (makeBlob)
 import Dir (gitPath, hashToFile)
-import qualified Data.ByteString.Lazy as LBS (ByteString, writeFile, readFile, toStrict)
-import Control.Monad.Trans.Maybe (MaybeT)
+import qualified Data.ByteString.Lazy as LBS (ByteString, readFile)
 import qualified Data.ByteString.Char8
-  as C (pack, unpack)
-import Data.ByteString.UTF8 as UTF8 (fromString, toString)
+  as C (unpack)
 import Crypto.Hash.SHA1 (hashlazy)
 import Data.ByteString.Base16 as B16 (encode)
 
@@ -37,18 +34,18 @@ cmd_catfile objectId =
   do
     gitPath' <- gitPath
     fileContents <- LBS.readFile $ hashFile gitPath'
-    Prelude.putStrLn $ rawContents $ parseObj fileContents
+    Prelude.print $ rawContents $ parseObj fileContents
     Prelude.print $ objType $ parseObj fileContents
 
 -- git hash-object command
+cmd_hashobject::String -> IO ()
 cmd_hashobject file =
-  hashobject file >>=  putStrLn . hashCmdObjHash
+  hashobject file >>=  \x -> (print . hashCmdObjHash) x >> (print . hashCmdObjContents) x
 
 hashobject::String -> IO GitHashCmd
 hashobject file =
   do
     fileContents <- LBS.readFile file
-    gitPath <- gitPath
     let objectContents = makeObjContents $ toRaw $ makeBlob fileContents
         objhash = C.unpack $ B16.encode $ hashlazy objectContents in
       return $ GitHashCmd objhash objectContents

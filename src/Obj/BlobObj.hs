@@ -11,19 +11,20 @@ import Obj.RawObj (
   , GitObj(fromRaw , toRaw) 
   , rawContents
   )
+import qualified Data.ByteString 
+  as BS (length)
 import qualified Data.ByteString.Lazy 
-  as LBS (ByteString, toStrict, length)
-import qualified Data.ByteString.Lazy.UTF8
-  as LUTF8 (fromString)
-import qualified Data.ByteString.Char8
-  as C (unpack)
+  as LBS (ByteString, toStrict)
 
-data BlobObj = BlobObj { blobContents::String }
+import qualified Data.Text as T (Text)
+import Data.Text.Encoding as T (decodeUtf8, encodeUtf8)
+
+data BlobObj = BlobObj { blobContents::T.Text}
 
 instance GitObj BlobObj where
   fromRaw r = BlobObj $ rawContents r
   toRaw b = let c = blobContents b in
-    RawObj Blob (fromIntegral $ LBS.length $ LUTF8.fromString c) c
+    RawObj Blob (fromIntegral $ BS.length $ T.encodeUtf8 c) c
 
 makeBlob::LBS.ByteString -> BlobObj
-makeBlob = BlobObj . C.unpack . LBS.toStrict
+makeBlob = BlobObj . T.decodeUtf8 . LBS.toStrict

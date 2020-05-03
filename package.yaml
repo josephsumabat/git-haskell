@@ -21,18 +21,18 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- split
+- base16-bytestring
 - bytestring
-- zlib
+- cryptohash-sha1
 - directory
 - filepath
+- megaparsec
 - ordered-containers
+- split
+- text
 - transformers
 - utf8-string
-- cryptohash-sha1
-- base16-bytestring
-- text
-- megaparsec
+- zlib
 
 
 library:

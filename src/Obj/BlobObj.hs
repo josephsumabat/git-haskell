@@ -10,13 +10,11 @@ import Obj.RawObj (
   , ObjType(Blob)
   , GitObj(..) 
   )
-import qualified Data.ByteString 
-  as BS (length)
-import qualified Data.ByteString.Lazy 
-  as LBS (ByteString, toStrict)
 
-import qualified Data.Text as T (Text)
-import Data.Text.Encoding as T (decodeUtf8, encodeUtf8)
+import qualified Data.ByteString      as BS   (length)
+import qualified Data.ByteString.Lazy as LBS  (ByteString, toStrict)
+import qualified Data.Text            as T    (Text)
+import qualified Data.Text.Encoding   as T    (decodeUtf8, encodeUtf8)
 
 newtype BlobObj = BlobObj { blobContents::T.Text}
 

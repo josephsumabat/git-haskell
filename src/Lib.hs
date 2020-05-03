@@ -39,16 +39,16 @@ someFunc = do
   --print $ parseFile $ x
 
 -- git cat-file command
-cmd_catfile::String -> IO ()
+cmd_catfile :: String -> IO ()
 cmd_catfile objectId = do
     readObj (T.pack objectId) >>= putStrLn . T.unpack . rawContents
 
 -- git hash-object command
-cmd_hashobject::String -> IO ()
+cmd_hashobject :: String -> IO ()
 cmd_hashobject file =
   hashobject file >>=  \x -> (print . hashCmdObjHash) x >> (print . hashCmdObjContents) x
 
-hashobject::String -> IO GitHashCmd
+hashobject :: String -> IO GitHashCmd
 hashobject file =
   do
     fileContents <- LBS.readFile file
@@ -57,6 +57,6 @@ hashobject file =
       return $ GitHashCmd objhash objectContents
 
 data GitHashCmd = GitHashCmd {
-    hashCmdObjHash::String
-  , hashCmdObjContents::LBS.ByteString
+    hashCmdObjHash :: String
+  , hashCmdObjContents :: LBS.ByteString
 }

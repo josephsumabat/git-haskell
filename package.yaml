@@ -32,6 +32,7 @@ dependencies:
 - cryptohash-sha1
 - base16-bytestring
 - text
+- megaparsec
 
 
 library:

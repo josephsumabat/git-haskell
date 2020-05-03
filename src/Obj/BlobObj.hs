@@ -8,8 +8,7 @@ module Obj.BlobObj (
 import Obj.RawObj (
   RawObj(RawObj)
   , ObjType(Blob)
-  , GitObj(fromRaw , toRaw) 
-  , rawContents
+  , GitObj(..) 
   )
 import qualified Data.ByteString 
   as BS (length)
@@ -19,10 +18,11 @@ import qualified Data.ByteString.Lazy
 import qualified Data.Text as T (Text)
 import Data.Text.Encoding as T (decodeUtf8, encodeUtf8)
 
-data BlobObj = BlobObj { blobContents::T.Text}
+newtype BlobObj = BlobObj { blobContents::T.Text}
 
 instance GitObj BlobObj where
-  fromRaw r = BlobObj $ rawContents r
+  fromRawMaybe (RawObj Blob _ r) = Just $ BlobObj r
+  fromRawMaybe _  = Nothing
   toRaw b = let c = blobContents b in
     RawObj Blob (fromIntegral $ BS.length $ T.encodeUtf8 c) c
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Lib
     ( someFunc
     ) where
@@ -7,14 +8,20 @@ import Obj.RawObj (
   , objType
   , parseObj
   , rawContents
-  , makeObjContents)
+  , objContents
+  , objHash
+  )
 import Obj.BlobObj (makeBlob)
+import Obj.Db (readObj)
 import Dir (gitPath, hashToFile)
+import qualified Data.Text as T (Text, concat, pack, unpack)
 import qualified Data.ByteString.Lazy as LBS (ByteString, readFile)
-import qualified Data.ByteString.Char8
-  as C (unpack)
+import qualified Data.ByteString.Char8 as C (unpack)
 import Crypto.Hash.SHA1 (hashlazy)
 import Data.ByteString.Base16 as B16 (encode)
+
+import Obj.TreeObj
+import Text.Megaparsec
 
 someFunc :: IO ()
 someFunc = do
@@ -22,6 +29,10 @@ someFunc = do
   --x <- LBS.readFile "tst.md"
   --dir <- validGitPath
   --print dir
+  parseTest pathFormat
+    "12314 blob\0 def test\n12315 blob def test"
+  parseTest treeFormat 
+    "12314 blob\0 def test\n22315 blob\0 def testef"
   cmd_hashobject "README.md"
   hashobject "README.md" >>= cmd_catfile . hashCmdObjHash
   --print x
@@ -29,13 +40,8 @@ someFunc = do
 
 -- git cat-file command
 cmd_catfile::String -> IO ()
-cmd_catfile objectId =
-  let hashFile = hashToFile objectId in
-  do
-    gitPath' <- gitPath
-    fileContents <- LBS.readFile $ hashFile gitPath'
-    Prelude.print $ rawContents $ parseObj fileContents
-    Prelude.print $ objType $ parseObj fileContents
+cmd_catfile objectId = do
+    readObj (T.pack objectId) >>= putStrLn . T.unpack . rawContents
 
 -- git hash-object command
 cmd_hashobject::String -> IO ()
@@ -46,7 +52,7 @@ hashobject::String -> IO GitHashCmd
 hashobject file =
   do
     fileContents <- LBS.readFile file
-    let objectContents = makeObjContents $ toRaw $ makeBlob fileContents
+    let objectContents = objContents $ toRaw $ makeBlob fileContents
         objhash = C.unpack $ B16.encode $ hashlazy objectContents in
       return $ GitHashCmd objhash objectContents
 

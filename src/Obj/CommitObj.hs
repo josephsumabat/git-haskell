@@ -4,4 +4,5 @@ data CommitObj = CommitObj {
     cTreeHash::String
   , cAuthor::String
   , cParentHash::String
+  , cDate::String
 }

@@ -12,24 +12,19 @@ module Obj.RawObj (
   ) where
 
 import Codec.Compression.Zlib (decompress)
+import Control.Applicative
 import Control.Exception (throw)
-import Text.Read (readMaybe)
-import DefinedExceptions (ObjException(..), maybeExceptionHelper)
-
-import qualified Data.Text as T (Text, concat, pack)
-import Data.Text.Encoding as T (decodeUtf8, encodeUtf8)
-import qualified Data.ByteString.Lazy 
-  as LBS (ByteString, toStrict, fromStrict)
-import qualified Data.ByteString.Char8
-  as C (break, unpack, drop)
-import qualified Text.Megaparsec as P (Parsec)
-import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer
-import Data.ByteString.Base16 as B16 (encode)
 import Crypto.Hash.SHA1 (hashlazy)
 import Data.Void (Void)
+import Text.Read (readMaybe)
 
-import Control.Applicative
+import qualified Data.Text              as T (Text, concat, pack)
+import qualified Data.Text.Encoding     as T (decodeUtf8, encodeUtf8)
+import qualified Data.ByteString.Base16 as B16 (encode)
+import qualified Data.ByteString.Char8  as C (break, unpack, drop)
+import qualified Data.ByteString.Lazy   as LBS (ByteString, toStrict, fromStrict)
+import qualified Text.Megaparsec        as MP (Parsec)
+import qualified Text.Megaparsec.Char   as MP (alphaNumChar, char)
 
 import DefinedExceptions (maybeExceptionHelper, ObjException(..))
 
@@ -49,7 +44,7 @@ class GitObj a where
   fromRaw::RawObj -> a
   fromRaw = maybeExceptionHelper fromRawMaybe UnexpectedObjectException
 
-type ObjTypeParser= P.Parsec Void T.Text ObjType
+type ObjTypeParser= MP.Parsec Void T.Text ObjType
 
 objTypeToText::ObjType -> T.Text
 objTypeToText Blob = "blob"
@@ -93,7 +88,7 @@ objContents (RawObj t s c) =
     [(objTypeToText t) ," " , (T.pack $ show s) , "\0" ,  c]
 
 objHash::RawObj -> ObjHash
-objHash = decodeUtf8 . B16.encode . hashlazy . objContents
+objHash = T.decodeUtf8 . B16.encode . hashlazy . objContents
 
 objTypeFormat::ObjTypeParser 
-objTypeFormat = (textToObjType <$> T.pack <$> some alphaNumChar) <* (char '\0')
+objTypeFormat = (textToObjType <$> T.pack <$> some MP.alphaNumChar) <* (MP.char '\0')

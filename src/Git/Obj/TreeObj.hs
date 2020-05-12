@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Obj.TreeObj (
+module Git.Obj.TreeObj (
     TreeObj(..)
   , FileObjType(..)
+  , PathEntry(..)
   , pathFormat
   , treeFormat
   , objToFileObj
@@ -15,10 +16,10 @@ import qualified Text.Megaparsec            as MP (Parsec, eof)
 import qualified Text.Megaparsec.Char       as MP (alphaNumChar, eol, space1)
 import qualified Text.Megaparsec.Char.Lexer as MP (decimal)
 
-import           DefinedExceptions          (ObjException (..),
+import           Git.DefinedExceptions          (ObjException (..),
                                              maybeExceptionHelper)
-import           Obj.BlobObj                (BlobObj (..))
-import           Obj.RawObj                 (ObjHash, ObjType (..),
+import           Git.Obj.BlobObj                (BlobObj (..))
+import           Git.Obj.RawObj                 (ObjHash, ObjType (..),
                                              objTypeFormat)
 
 newtype TreeObj =
@@ -28,13 +29,13 @@ newtype TreeObj =
 
 data PathEntry = PathEntry
   { 
-    fileMode  :: Int
-  , fileType  :: FileObjType
-  , pHash     :: ObjHash
-  , fileName  :: FileName
-  } deriving (Show)
+    pFileMode  :: Int
+  , pFileType  :: FileObjType
+  , pHash      :: ObjHash
+  , pFileName  :: FileName
+  } deriving (Eq, Show)
 
-data FileObjType = BlobFileObj | TreeFileObj deriving (Show)
+data FileObjType = BlobFileType | TreeFileType deriving (Eq, Show)
 
 data FileObj = FileObjBlob BlobObj | FileObjTree TreeObj
 
@@ -43,8 +44,8 @@ type TreeParser = MP.Parsec Void T.Text TreeObj
 type PathParser = MP.Parsec Void T.Text PathEntry
 
 objToMaybeFileObj :: ObjType -> Maybe FileObjType
-objToMaybeFileObj Blob = Just BlobFileObj
-objToMaybeFileObj Tree = Just TreeFileObj
+objToMaybeFileObj Blob = Just BlobFileType
+objToMaybeFileObj Tree = Just TreeFileType
 objToMaybeFileObj _    = Nothing
 
 objToFileObj :: ObjType -> FileObjType

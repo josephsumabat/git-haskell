@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Lib
+module Git.Lib
     ( someFunc
     ) where
 
-import Obj.RawObj (
+import Git.Obj.RawObj (
     GitObj(..)
   , objType
   , parseObj
@@ -11,16 +11,16 @@ import Obj.RawObj (
   , objContents
   , objHash
   )
-import Obj.BlobObj (makeBlob)
-import Obj.Db (readObj)
-import Dir (gitPath, hashToFile)
+import Git.Obj.BlobObj (makeBlob)
+import Git.Obj.Db (readObj)
+import Git.Dir (gitPath, hashToFile)
 import qualified Data.Text as T (Text, concat, pack, unpack)
 import qualified Data.ByteString.Lazy as LBS (ByteString, readFile)
 import qualified Data.ByteString.Char8 as C (unpack)
 import Crypto.Hash.SHA1 (hashlazy)
 import Data.ByteString.Base16 as B16 (encode)
 
-import Obj.TreeObj
+import Git.Obj.TreeObj
 import Text.Megaparsec
 
 someFunc :: IO ()

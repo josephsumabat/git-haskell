@@ -1,9 +1,9 @@
-module Obj.Db (readObj) where
+module Git.Obj.Db (readObj) where
 
-import qualified Data.ByteString.Lazy as LBS (ByteString, readFile)
+import qualified Data.ByteString.Lazy as LBS (readFile)
 import qualified Data.Text            as T (unpack)
-import           Dir                  (gitPath, hashToFile)
-import           Obj.RawObj           (ObjHash, RawObj (..), parseObj)
+import           Git.Dir              (gitPath, hashToFile)
+import           Git.Obj.RawObj       (ObjHash, RawObj (..), parseObj)
 
 readObj::ObjHash -> IO RawObj
 readObj objHashId = do

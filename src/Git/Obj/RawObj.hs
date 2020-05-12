@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Obj.RawObj (
+module Git.Obj.RawObj (
   RawObj (..)
   , ObjType(..)
   , GitObj (..)
@@ -28,7 +28,7 @@ import qualified Data.Text.Encoding     as T (decodeUtf8, encodeUtf8)
 import qualified Text.Megaparsec        as MP (Parsec)
 import qualified Text.Megaparsec.Char   as MP (alphaNumChar, char)
 
-import           DefinedExceptions      (ObjException (..),
+import           Git.DefinedExceptions  (ObjException (..),
                                          maybeExceptionHelper)
 
 type ObjHash = T.Text

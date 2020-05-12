@@ -1,5 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
-module Dir
+module Git.Dir
   (
     gitPath
   , hashToFile
@@ -9,13 +9,11 @@ import System.Directory          (canonicalizePath,
                                   doesDirectoryExist,
                                   getCurrentDirectory)
 
-import Control.Exception         (throw)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import System.FilePath           (equalFilePath, joinPath)
 
-import DefinedExceptions         (DirException (..),
-                                            maybeExceptionHelper)
+import Git.DefinedExceptions         (DirException (..), maybeExceptionHelper)
 
 gitDir :: String
 gitDir = ".git"

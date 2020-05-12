@@ -1,11 +1,11 @@
-module Obj.BlobObj (
+module Git.Obj.BlobObj (
     BlobObj(BlobObj)
   , fromRaw
   , toRaw
   , makeBlob
 ) where
 
-import Obj.RawObj (
+import Git.Obj.RawObj (
   RawObj(RawObj)
   , ObjType(Blob)
   , GitObj(..) 

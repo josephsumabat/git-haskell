@@ -24,6 +24,13 @@ This project is an implementation of a subset of `git` commands in Haskell for l
   - Parse `tree` files
   - `cmd_catfile` and `cmd_hashfile` functions working (will refactor)
 
+### Learning Documentation
+Concepts/Things I've used in this project
+
+  - Parser combinators (megaparsec)
+  - Monad transformers (MaybeT)
+  - Bang patterns (laziness)
+
 ## Building
 Build with stack:
 ```

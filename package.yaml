@@ -26,6 +26,7 @@ dependencies:
 - cryptohash-sha1
 - directory
 - filepath
+- HUnit
 - megaparsec
 - ordered-containers
 - split

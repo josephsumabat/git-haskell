@@ -1,4 +1,4 @@
-module Args
+module Git.Args
     ( handleArgs
     ) where
 

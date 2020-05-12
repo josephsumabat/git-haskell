@@ -1,4 +1,4 @@
-module DefinedExceptions
+module Git.DefinedExceptions
   (
       maybeExceptionHelper
     , ObjException(..)

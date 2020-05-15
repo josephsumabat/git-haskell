@@ -1,5 +1,5 @@
 module Git.Obj.BlobObj (
-    BlobObj(BlobObj)
+    BlobObj(..)
   , fromRaw
   , toRaw
   , makeBlob

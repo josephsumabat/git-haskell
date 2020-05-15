@@ -1,6 +1,7 @@
 module Git.DefinedExceptions
   (
       maybeExceptionHelper
+    , rightToMaybe
     , ObjException(..)
     , DirException(..)
   ) where
@@ -20,3 +21,7 @@ instance Exception DirException
 maybeExceptionHelper::Exception e => (a -> Maybe b) -> e -> a -> b
 maybeExceptionHelper fn exception input = 
   fromMaybe (throw exception) (fn input)
+
+rightToMaybe::Either a b -> Maybe b
+rightToMaybe (Right r) = Just r
+rightToMaybe _         = Nothing

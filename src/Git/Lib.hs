@@ -21,6 +21,7 @@ import Crypto.Hash.SHA1 (hashlazy)
 import Data.ByteString.Base16 as B16 (encode)
 
 import Git.Obj.TreeObj
+import Git.Obj.BlobObj
 import Text.Megaparsec
 
 someFunc :: IO ()

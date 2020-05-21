@@ -19,14 +19,15 @@ import           Crypto.Hash.SHA1       (hashlazy)
 import           Data.Void              (Void)
 import           Text.Read              (readMaybe)
 
+import qualified Data.ByteString        as BS (ByteString, concat)
 import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8  as C (break, drop, unpack)
 import qualified Data.ByteString.Lazy   as LBS (ByteString, fromStrict,
                                                 toStrict)
-import qualified Data.Text              as T (Text, concat, pack)
-import qualified Data.Text.Encoding     as T (decodeUtf8, encodeUtf8)
+import qualified Data.Text              as T --(Text, concat, pack)
+import qualified Data.Text.Encoding     as T --(decodeUtf8, encodeUtf8)
 import qualified Text.Megaparsec        as MP (Parsec)
-import qualified Text.Megaparsec.Char   as MP (alphaNumChar, char)
+import qualified Text.Megaparsec.Char   as MP (alphaNumChar)
 
 import           Git.DefinedExceptions  (ObjException (..),
                                          maybeExceptionHelper)
@@ -37,7 +38,7 @@ data RawObj = RawObj
   {
     objType     :: ObjType
   , size        :: Int
-  , rawContents :: T.Text
+  , rawContents :: BS.ByteString
   } deriving Show
 
 data ObjType = Blob | Commit | Tree deriving Show
@@ -78,7 +79,7 @@ parseObjMaybe contents =
         RawObj
         <$> (textToObjTypeMaybe $ T.decodeUtf8 $ fst metaData)
         <*> (readMaybe $ C.unpack $ C.drop 1 $ snd metaData)
-        <*> (return $ T.decodeUtf8 $ C.drop 1 $ snd splitData)
+        <*> (return $ C.drop 1 $ snd splitData)
 
 parseObj :: LBS.ByteString -> RawObj
 parseObj contents =
@@ -88,11 +89,11 @@ parseObj contents =
 
 objContents :: RawObj -> LBS.ByteString
 objContents (RawObj t s c) =
-  LBS.fromStrict $ T.encodeUtf8 $ T.concat
-    [(objTypeToText t) ," " , (T.pack $ show s) , "\0" ,  c]
+  LBS.fromStrict $ BS.concat [ T.encodeUtf8 $ T.concat
+    [(objTypeToText t) ," " , (T.pack $ show s) , "\0" ], c]
 
 objHash :: RawObj -> ObjHash
 objHash = T.decodeUtf8 . B16.encode . hashlazy . objContents
 
 objTypeFormat :: ObjTypeParser
-objTypeFormat = (textToObjType <$> T.pack <$> some MP.alphaNumChar) <* (MP.char '\0')
+objTypeFormat = (textToObjType <$> T.pack <$> some MP.alphaNumChar)

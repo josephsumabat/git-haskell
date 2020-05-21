@@ -15,7 +15,7 @@ import Git.Obj.BlobObj (makeBlob)
 import Git.Obj.Db (readObj)
 import Git.Dir (gitPath, hashToFile)
 import qualified Data.Text as T (Text, concat, pack, unpack)
-import qualified Data.ByteString.Lazy as LBS (ByteString, readFile)
+import qualified Data.ByteString.Lazy as LBS (ByteString, readFile, toStrict)
 import qualified Data.ByteString.Char8 as C (unpack)
 import Crypto.Hash.SHA1 (hashlazy)
 import Data.ByteString.Base16 as B16 (encode)
@@ -30,19 +30,22 @@ someFunc = do
   --x <- LBS.readFile "tst.md"
   --dir <- validGitPath
   --print dir
-  parseTest pathFormat
-    "12314 blob\0 def test\n12315 blob def test"
-  parseTest treeFormat 
-    "12314 blob\0 def test\n22315 blob\0 def testef"
-  cmd_hashobject "README.md"
-  hashobject "README.md" >>= cmd_catfile . hashCmdObjHash
+  --parseTest pathFormat
+  --  "12314 blob def test\n12315 blob def test"
+  o <- readObj "8808f77a90f533c022dfc1de035aa6ac4e5d0391"
+  --print $ rawContents o
+  parseTest treeFormat (rawContents o)
+  --cmd_hashobject "README.md"
+  --hashobject "README.md" >>= cmd_catfile . hashCmdObjHash
+  cmd_catfile "d6f0925633e7f40092eb3a586a91d0451078cb53"
+  cmd_catfile "8808f77a90f533c022dfc1de035aa6ac4e5d0391"
   --print x
   --print $ parseFile $ x
 
 -- git cat-file command
 cmd_catfile :: String -> IO ()
 cmd_catfile objectId = do
-    readObj (T.pack objectId) >>= putStrLn . T.unpack . rawContents
+    readObj (T.pack objectId) >>= putStrLn . T.unpack . blobContents . fromRaw
 
 -- git hash-object command
 cmd_hashobject :: String -> IO ()

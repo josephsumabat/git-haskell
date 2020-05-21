@@ -19,10 +19,10 @@ import qualified Data.Text.Encoding   as T    (decodeUtf8, encodeUtf8)
 newtype BlobObj = BlobObj { blobContents::T.Text}
 
 instance GitObj BlobObj where
-  fromRawMaybe (RawObj Blob _ r) = Just $ BlobObj r
+  fromRawMaybe (RawObj Blob _ r) = Just $ BlobObj $ T.decodeUtf8 r
   fromRawMaybe _  = Nothing
-  toRaw b = let c = blobContents b in
-    RawObj Blob (fromIntegral $ BS.length $ T.encodeUtf8 c) c
+  toRaw (BlobObj b) = let c = T.encodeUtf8 b in
+    RawObj Blob (fromIntegral $ BS.length $ c) c
 
 makeBlob::LBS.ByteString -> BlobObj
 makeBlob = BlobObj . T.decodeUtf8 . LBS.toStrict

@@ -19,7 +19,7 @@ import           Crypto.Hash.SHA1       (hashlazy)
 import           Data.Void              (Void)
 import           Text.Read              (readMaybe)
 
-import qualified Data.ByteString        as BS (ByteString, concat)
+import qualified Data.ByteString        as BS (ByteString, concat, length)
 import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8  as C (break, drop, unpack)
 import qualified Data.ByteString.Lazy   as LBS (ByteString, fromStrict,
@@ -45,7 +45,11 @@ data ObjType = Blob | Commit | Tree deriving Show
 
 class GitObj a where
   fromRawMaybe :: RawObj -> Maybe a
+  serializeObj :: a -> BS.ByteString
+  gObjType     :: a -> ObjType
   toRaw        :: a -> RawObj
+  toRaw o       = RawObj (gObjType o) (fromIntegral $ BS.length $ contents) contents
+                   where contents = serializeObj o
   fromRaw      :: RawObj -> a
   fromRaw = maybeExceptionHelper fromRawMaybe UnexpectedObjectException
 

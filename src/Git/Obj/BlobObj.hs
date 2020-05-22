@@ -11,18 +11,17 @@ import Git.Obj.RawObj (
   , GitObj(..) 
   )
 
-import qualified Data.ByteString      as BS   (length)
 import qualified Data.ByteString.Lazy as LBS  (ByteString, toStrict)
 import qualified Data.Text            as T    (Text)
 import qualified Data.Text.Encoding   as T    (decodeUtf8, encodeUtf8)
 
-newtype BlobObj = BlobObj { blobContents::T.Text}
+newtype BlobObj = BlobObj { blobContents::T.Text} deriving (Show)
 
 instance GitObj BlobObj where
   fromRawMaybe (RawObj Blob _ r) = Just $ BlobObj $ T.decodeUtf8 r
   fromRawMaybe _  = Nothing
-  toRaw (BlobObj b) = let c = T.encodeUtf8 b in
-    RawObj Blob (fromIntegral $ BS.length $ c) c
+  gObjType _ = Blob
+  serializeObj = T.encodeUtf8  . blobContents
 
 makeBlob::LBS.ByteString -> BlobObj
 makeBlob = BlobObj . T.decodeUtf8 . LBS.toStrict

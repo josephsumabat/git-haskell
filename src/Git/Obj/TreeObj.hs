@@ -1,38 +1,37 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BangPatterns #-}
 module Git.Obj.TreeObj (
     TreeListObj(..)
   , FileObjType(..)
   , PathEntry(..)
   , pathFormat
   , treeFormat
-  --, expandTree
+  , treeToText
+  , expandTree
   , objToFileType
 ) where
 
-import           Control.Applicative         (optional, some)
+import           Control.Applicative         (some)
 import           Data.Void                  (Void)
+import           Data.List                  (intercalate)
 
-import qualified Data.Text                  as T  (Text, pack, concat)
-import qualified Data.Text.Encoding         as T  (encodeUtf8)
-import qualified Text.Megaparsec            as MP (Parsec, parse, takeP, eof, single, take1_)
-import qualified Text.Megaparsec.Byte       as MP (alphaNumChar
-                                                  , alphaNumChar
-                                                  , char
-                                                  , digitChar
-                                                  , eol
-                                                  , printChar
-                                                  , space1)
-import qualified Text.Megaparsec.Byte.Lexer as MP (decimal)
-import qualified Text.Megaparsec.Char       as MPC (alphaNumChar, char, digitChar,  eol, space1)
-import qualified Text.Megaparsec.Char.Lexer as MPC (decimal)
-import qualified Data.ByteString            as BS (ByteString, length, singleton, pack)
-
+import qualified Data.Text                  as T   (Text, concat, intercalate, length, pack, unpack)
+import qualified Data.Text.Encoding         as T   (encodeUtf8, decodeUtf8)
+import qualified Text.Megaparsec            as MP  (Parsec, parse, takeP, eof,)
+import qualified Text.Megaparsec.Byte       as MP  ( char
+                                                   , printChar
+                                                   , space1)
+import qualified Text.Megaparsec.Byte.Lexer as MP  (decimal)
+import qualified Data.ByteString            as BS  (ByteString, concat, pack)
+import qualified Data.ByteString.Base16     as B16 (encode, decode)
+import qualified Data.ByteString.Char8      as C8  (pack)
 import           Git.DefinedExceptions          (ObjException (..)
                                                 , rightToMaybe
                                                 , maybeExceptionHelper)
 import           Git.Obj.BlobObj                (BlobObj (..))
 import           Git.Obj.RawObj                 (ObjHash, ObjType (..),
-                                                 GitObj (..), RawObj (..), objTypeFormat)
+                                                 GitObj (..), RawObj (..)
+                                                , objTypeToText)
 import           Git.Obj.Db                     (readObj)
 
 newtype TreeListObj =
@@ -42,22 +41,30 @@ newtype TreeListObj =
 
 data PathEntry = PathEntry
   {
-    pFileMode  :: Int
-  , pFileName  :: BS.ByteString
-  , pHash      :: BS.ByteString
-  } | PathRoot deriving (Eq, Show)
+    pFileMode :: Int
+  , pFileName :: FileName
+  , pHash     :: ObjHash
+  } deriving (Eq, Show)
 
 data FileObjType = BlobFileType | TreeFileType deriving (Eq, Show)
-data TreeObj = TreeObjLeaf PathEntry BlobObj | TreeObjBranch PathEntry [ TreeObj ]
+data TreeObj = TreeObjLeaf PathEntry BlobObj 
+             | TreeObjBranch PathEntry [ TreeObj ] 
+             | TreeObjRoot [ TreeObj ]
+             deriving (Show)
 
-type FileName = String
+type FileName   = T.Text
+type TreeDepth = Integer
+
+type TreeNodeInfo = ( PathEntry, ObjType, FilePath, TreeDepth)
+
 type TreeParser = MP.Parsec Void BS.ByteString TreeListObj
 type PathParser = MP.Parsec Void BS.ByteString PathEntry
 
---instance GitObj TreeListObj where
---  fromRawMaybe (RawObj Tree _ r) = rightToMaybe (MP.parse treeFormat "" r)
---  toRaw t = let c = treeToText t in
---                RawObj Tree (fromIntegral $ BS.length $ T.encodeUtf8 c) c
+instance GitObj TreeListObj where
+  fromRawMaybe (RawObj Tree _ r) = rightToMaybe (MP.parse treeFormat "" r)
+  fromRawMaybe _  = Nothing
+  gObjType _ = Tree
+  serializeObj (TreeListObj l) = BS.concat $ serializePathEntry <$> l
 
 objToMaybeFileType :: ObjType -> Maybe FileObjType
 objToMaybeFileType Blob = Just BlobFileType
@@ -68,62 +75,70 @@ objToFileType :: ObjType -> FileObjType
 objToFileType =
   maybeExceptionHelper objToMaybeFileType UnexpectedObjectException
 
---expandTree :: TreeListObj -> IO TreeObj
---expandTree t = expandTree' PathRoot t where
---  expandTree' :: PathEntry -> TreeListObj -> IO TreeObj
---  expandTree' p l = (TreeObjBranch p) <$> (traverse expandPath $ files l) 
---  expandPath :: PathEntry -> IO TreeObj
---  expandPath path = 
---    case path of
---  -- Blob case
---      (PathEntry _ BlobFileType h _) -> TreeObjLeaf path <$> fromRaw <$> readObj h 
---  -- Tree case
---      (PathEntry _ TreeFileType h _) -> (expandTree' path) =<< (fromRaw <$> (readObj $ h)) 
+expandTree :: TreeListObj -> IO TreeObj
+expandTree t = TreeObjRoot <$> (traverse expandPath $ files t)
+  where
+  expandTree' :: PathEntry -> TreeListObj -> IO TreeObj
+  expandTree' p l = (TreeObjBranch p) <$> (traverse expandPath $ files l)
+  expandPath :: PathEntry -> IO TreeObj
+  expandPath path = let h = pHash path in
+    (readObj h) >>= \rawObj ->
+      case (objToFileType $ objType rawObj) of
+          BlobFileType -> TreeObjLeaf path <$> fromRaw <$> readObj h
+          TreeFileType -> (expandTree' path) =<< (fromRaw <$> (readObj h))
 
--- getObjRepresentation :: TreeListObj -> [TreeObj]
--- getObjRepresentation t = fmap
 
---treeToText :: TreeListObj -> T.Text
---treeToText (TreeListObj f) = T.concat $ pathEntryToText <$> f
+preOrderTreeFlat :: TreeObj -> [TreeNodeInfo]
+preOrderTreeFlat t = preOrderTreeFlat' [] 0 t  where
+  preOrderTreeFlat' :: [FilePath] -> TreeDepth -> TreeObj -> [TreeNodeInfo]
+  preOrderTreeFlat' path depth (TreeObjRoot pel) = (preOrderTreeFlat' path (depth + 1) =<< pel)
+  preOrderTreeFlat' path depth (TreeObjBranch pe pel) = 
+    (pe, Tree, normalizePath ((T.unpack (pFileName pe)):path), depth):(pel >>= 
+      (preOrderTreeFlat' ((T.unpack $ pFileName pe):path) (depth + 1)))
+  preOrderTreeFlat' p d (TreeObjLeaf pe _) = return
+    (pe, Blob, normalizePath ((T.unpack $ pFileName pe):p), d)
+  normalizePath = intercalate "/" . reverse
 
---pathEntryToText :: PathEntry -> T.Text
---pathEntryToText (PathEntry fmode ftype fhash fname) =
---  T.concat [ T.pack $ show fmode
---           , " "
---           , fileTypeToText ftype
---           , " "
---           , fhash
---           , "    "
---           , T.pack fname
---           , "\n"
---           ]
+treeToText :: TreeListObj -> Integer -> IO T.Text
+treeToText t n = expandTree t >>= \et ->
+  return $ T.intercalate "\n" $ (treeNodeInfoToText <$> (preOrderTreeFlat et)) where
+  treeNodeInfoToText (pathEntry, ot, fp, _) = T.concat
+    [ 
+      normalizeDigLength (T.pack $ show $ pFileMode pathEntry) 6
+    , " "
+    , objTypeToText ot
+    , " "
+    , pHash pathEntry
+    , "    "
+    , T.pack fp
+    ]
 
-fileTypeToText :: FileObjType -> T.Text
-fileTypeToText BlobFileType = "blob"
-fileTypeToText TreeFileType = "tree"
+
+normalizeDigLength :: T.Text -> Int ->  T.Text
+normalizeDigLength num len =
+  if (T.length num < len) then
+      normalizeDigLength (T.concat ["0",num]) len
+  else
+    num
+
+serializePathEntry :: PathEntry -> BS.ByteString
+serializePathEntry (PathEntry fmode fname fhash) =
+  BS.concat [
+             C8.pack $ show fmode
+            , " "
+            , T.encodeUtf8 fname
+            , "\0"
+            , fst $ B16.decode $ T.encodeUtf8 fhash
+            ]
 
 treeFormat :: TreeParser
-treeFormat = TreeListObj <$> some pathFormat
-
+treeFormat = TreeListObj <$> some pathFormat <* MP.eof
 
 pathFormat :: PathParser
 pathFormat =
   PathEntry <$> (MP.decimal)
             <*   MP.space1
-            <*> (BS.pack <$> (some MP.printChar))
+            <*> (T.decodeUtf8 <$> (BS.pack <$> (some MP.printChar)))
             <*  (MP.char 0)
-            <*> ((MP.takeP Nothing 20)) 
-              where
-
--- pathFormat :: PathParser
--- pathFormat =
---   PathEntry
---     <$> MP.decimal
---     <*  (MP.space1)
---     <*> (objToFileType <$> objTypeFormat)
---     <*  (MP.space1)
---     <*> (T.pack <$> some MP.alphaNumChar)
---     <*  (MP.space1)
---     <*> (some MP.alphaNumChar)
---     <*  (optional MP.eol)
---     <*  (optional MP.eof)
+            <*> (T.decodeUtf8 <$> (B16.encode <$> (MP.takeP Nothing hashlen)))
+              where hashlen = 20

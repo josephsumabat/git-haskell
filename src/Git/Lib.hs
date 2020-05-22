@@ -23,6 +23,7 @@ import Data.ByteString.Base16 as B16 (encode)
 import Git.Obj.TreeObj
 import Git.Obj.BlobObj
 import Text.Megaparsec
+import qualified Data.Text.IO as T
 
 someFunc :: IO ()
 someFunc = do
@@ -34,13 +35,18 @@ someFunc = do
   --  "12314 blob def test\n12315 blob def test"
   o <- readObj "8808f77a90f533c022dfc1de035aa6ac4e5d0391"
   --print $ rawContents o
-  parseTest treeFormat (rawContents o)
+  --print o
+  --print =<< (expandTree (fromRaw o))
+  a <-(treeToText (fromRaw o::TreeListObj) 0)
+  T.putStrLn a
+  -- (fromRaw o)
   --cmd_hashobject "README.md"
   --hashobject "README.md" >>= cmd_catfile . hashCmdObjHash
-  cmd_catfile "d6f0925633e7f40092eb3a586a91d0451078cb53"
-  cmd_catfile "8808f77a90f533c022dfc1de035aa6ac4e5d0391"
+  --cmd_catfile "d6f0925633e7f40092eb3a586a91d0451078cb53"
+  --cmd_catfile "8808f77a90f533c022dfc1de035aa6ac4e5d0391"
   --print x
   --print $ parseFile $ x
+  --print "123"
 
 -- git cat-file command
 cmd_catfile :: String -> IO ()

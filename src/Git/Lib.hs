@@ -6,22 +6,20 @@ module Git.Lib
 import Git.Obj.RawObj (
     GitObj(..)
   , objType
-  , parseObj
   , rawContents
   , objContents
-  , objHash
   )
 import Git.Obj.BlobObj (makeBlob)
 import Git.Obj.Db (readObj)
-import Git.Dir (gitPath, hashToFile)
-import qualified Data.Text as T (Text, concat, pack, unpack)
-import qualified Data.ByteString.Lazy as LBS (ByteString, readFile, toStrict)
+import qualified Data.Text as T (pack, unpack)
+import qualified Data.ByteString.Lazy as LBS (ByteString, readFile)
 import qualified Data.ByteString.Char8 as C (unpack)
 import Crypto.Hash.SHA1 (hashlazy)
 import Data.ByteString.Base16 as B16 (encode)
 
 import Git.Obj.TreeObj
 import Git.Obj.BlobObj
+import Git.Obj.CommitObj
 import Text.Megaparsec
 import qualified Data.Text.IO as T
 
@@ -37,8 +35,10 @@ someFunc = do
   --print $ rawContents o
   --print o
   --print =<< (expandTree (fromRaw o))
-  a <-(treeToText (fromRaw o::TreeListObj) 0)
+  a <-(treeToText (fromRaw o::TreeListObj))
   T.putStrLn a
+  o2 <- readObj "6a24235cf606503049ef0c89993a208e8372b039"
+  parseTest commitFormat $ rawContents o2
   -- (fromRaw o)
   --cmd_hashobject "README.md"
   --hashobject "README.md" >>= cmd_catfile . hashCmdObjHash

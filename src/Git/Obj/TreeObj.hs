@@ -99,8 +99,8 @@ preOrderTreeFlat t = preOrderTreeFlat' [] 0 t  where
     (pe, Blob, normalizePath ((T.unpack $ pFileName pe):p), d)
   normalizePath = intercalate "/" . reverse
 
-treeToText :: TreeListObj -> Integer -> IO T.Text
-treeToText t n = expandTree t >>= \et ->
+treeToText :: TreeListObj -> IO T.Text
+treeToText t = expandTree t >>= \et ->
   return $ T.intercalate "\n" $ (treeNodeInfoToText <$> (preOrderTreeFlat et)) where
   treeNodeInfoToText (pathEntry, ot, fp, _) = T.concat
     [ 
@@ -112,7 +112,6 @@ treeToText t n = expandTree t >>= \et ->
     , "    "
     , T.pack fp
     ]
-
 
 normalizeDigLength :: T.Text -> Int ->  T.Text
 normalizeDigLength num len =
@@ -138,7 +137,7 @@ pathFormat :: PathParser
 pathFormat =
   PathEntry <$> (MP.decimal)
             <*   MP.space1
-            <*> (T.decodeUtf8 <$> (BS.pack <$> (some MP.printChar)))
+            <*> (T.decodeUtf8 . BS.pack <$> some MP.printChar)
             <*  (MP.char 0)
-            <*> (T.decodeUtf8 <$> (B16.encode <$> (MP.takeP Nothing hashlen)))
+            <*> (T.decodeUtf8 . B16.encode <$> MP.takeP Nothing hashlen)
               where hashlen = 20

@@ -9,6 +9,7 @@ This project is an implementation of a subset of `git` commands in Haskell for l
     - `git cat-file`
     - `git hash-object`
     - `git commit-tree`
+    - `git ls-tree`
   - `git checkout`
   - `git log`
   - `git status`
@@ -20,9 +21,9 @@ This project is an implementation of a subset of `git` commands in Haskell for l
   - No packfiles
 
 ### Progress
-  - Parse `blob` files
-  - Parse `tree` files
-  - `cmd_catfile` and `cmd_hashfile` functions working (will refactor)
+  - Parse and represent `blob` files
+  - Parse and represent `tree` files
+  - `cmd_catfile` and `cmd_hashfile` functions working in library
 
 ### Learning Documentation
 Concepts/Things I've used in this project
@@ -30,6 +31,7 @@ Concepts/Things I've used in this project
   - Parser combinators (megaparsec)
   - Monad transformers (MaybeT)
   - Bang patterns (laziness)
+  - Character encodings - Binary encoding vs Base16 vs UTF-8 etc.
 
 ## Building
 Build with stack:

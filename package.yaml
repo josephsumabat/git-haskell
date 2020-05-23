@@ -4,7 +4,7 @@ github:              "josephsumabat/git-haskell"
 license:             BSD3
 author:              "Joseph Sumabat"
 maintainer:          "example@example.com"
-copyright:           "2020 Author name here"
+copyright:           "2020 Joseph Sumabat"
 
 extra-source-files:
 - README.md
@@ -48,6 +48,8 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -Wall
+    - -O2
+    - -Werror
     dependencies:
     - git-haskell
 

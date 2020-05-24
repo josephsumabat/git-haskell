@@ -10,7 +10,6 @@ import Git.Obj.RawObj (
   , objContents
   )
 import Git.Obj.BlobObj (makeBlob)
-import Git.Obj.Db (readObj)
 import qualified Data.Text as T (pack, unpack)
 import qualified Data.ByteString.Lazy as LBS (ByteString, readFile)
 import qualified Data.ByteString.Char8 as C (unpack)
@@ -22,6 +21,7 @@ import Git.Obj.BlobObj
 import Git.Obj.CommitObj
 import Text.Megaparsec
 import qualified Data.Text.IO as T
+import Git.Class
 
 someFunc :: IO ()
 someFunc = do

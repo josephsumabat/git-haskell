@@ -32,7 +32,7 @@ import           Git.Obj.BlobObj                (BlobObj (..))
 import           Git.Obj.RawObj                 (ObjHash, ObjType (..),
                                                  GitObj (..), RawObj (..)
                                                 , objTypeToText)
-import           Git.Obj.Db                     (readObj)
+import           Git.Class                      (GitMonad(..))
 
 newtype TreeListObj =
   TreeListObj {
@@ -75,12 +75,12 @@ objToFileType :: ObjType -> FileObjType
 objToFileType =
   maybeExceptionHelper objToMaybeFileType UnexpectedObjectException
 
-expandTree :: TreeListObj -> IO TreeObj
+expandTree :: GitMonad m => TreeListObj -> m TreeObj
 expandTree t = TreeObjRoot <$> (traverse expandPath $ files t)
   where
-  expandTree' :: PathEntry -> TreeListObj -> IO TreeObj
+  expandTree' :: GitMonad m => PathEntry -> TreeListObj -> m TreeObj
   expandTree' p l = (TreeObjBranch p) <$> (traverse expandPath $ files l)
-  expandPath :: PathEntry -> IO TreeObj
+  expandPath :: GitMonad m => PathEntry -> m TreeObj
   expandPath path = let h = pHash path in
     (readObj h) >>= \rawObj ->
       case (objToFileType $ objType rawObj) of
@@ -99,7 +99,7 @@ preOrderTreeFlat t = preOrderTreeFlat' [] 0 t  where
     (pe, Blob, normalizePath ((T.unpack $ pFileName pe):p), d)
   normalizePath = intercalate "/" . reverse
 
-treeToText :: TreeListObj -> IO T.Text
+treeToText :: GitMonad m => TreeListObj -> m T.Text
 treeToText t = expandTree t >>= \et ->
   return $ T.intercalate "\n" $ (treeNodeInfoToText <$> (preOrderTreeFlat et)) where
   treeNodeInfoToText (pathEntry, ot, fp, _) = T.concat

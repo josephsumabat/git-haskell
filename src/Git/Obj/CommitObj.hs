@@ -35,6 +35,7 @@ kHashFormat key =
 kNameDateFormat :: T.Text -> CommitKvParser
 kNameDateFormat key =
   (MP.string $ T.encodeUtf8 key)
+  *> (some MP.space1)
   *> (T.decodeUtf8 . BS.pack <$>  (some MP.printChar))
   <* optional MP.eol
 
